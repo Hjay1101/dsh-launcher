@@ -1,8 +1,21 @@
-# dsh-launcher
+# 🐋 dsh-launcher
 
-One-click launcher for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) Web — boot the web UI in your workspace and open the browser automatically. Works on **macOS & Linux**.
+> **The minimal, native macOS launcher for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).**
 
-一键启动 DeepSeek Harness Web：自动进入工作区、启动服务、等待就绪后打开浏览器。支持 macOS 和 Linux。
+<p align="center">
+  <a href="https://github.com/deepseek-ai/deepseek-harness"><img alt="DeepSeek Harness" src="https://img.shields.io/badge/DeepSeek%20Harness-rc.6-171513.svg?style=flat-square"></a>
+  <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square">
+  <img alt="Platform: macOS & Linux" src="https://img.shields.io/badge/Platform-macOS%20%7C%20Linux-lightgrey.svg?style=flat-square">
+  <img alt="Native" src="https://img.shields.io/badge/Native-Objective--C%2FCocoa-171513.svg?style=flat-square">
+</p>
+
+**One-click launcher for DeepSeek Harness Web** — boot the web UI in your workspace, wait for the server to actually respond, and open the browser automatically. Works from **CLI (`dsh-launcher`)**, as a double-click **`.command`** file, or as a **native macOS app (DeepSeek Harness.app)** with a real Cocoa event loop, a stable Dock icon, and "close the app = stop the service" lifecycle.
+
+一键启动 DeepSeek Harness Web：自动进入工作区、启动服务、HTTP 就绪后自动打开浏览器。支持 **CLI 命令行、双击 .command、以及原生 macOS 应用**三种形态——原生 app 有稳定 Dock 图标，关闭即可停止服务。
+
+**Why it's unique:** while most DSH desktop projects are heavy Electron/Rust shells, this is the only **native, lightweight macOS launcher** in the ecosystem — a ~200 KB `.app` with zero browser engine and near-zero memory footprint.
+
+**独特性**：生态中大多数 DSH 桌面端是 Electron/Rust 重型外壳，这是唯一一个**原生、轻量的 macOS 启动器**——整个 `.app` 不到 200KB，无浏览器引擎、几乎零内存占用。
 
 ## Why / 为什么需要它
 
