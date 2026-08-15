@@ -19,7 +19,7 @@ ICON_PATHS = [
 ]
 
 TITLE_MAIN = "为这只鲸鱼"
-TITLE_SUB = "我做了个启动器"
+TITLE_SUB = "我做了个极简启动器"
 HOOK = "🐋 鲸鱼图标 · 颜值在线"
 GITHUB = "github.com/Hjay1101/dsh-launcher"
 
