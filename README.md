@@ -45,9 +45,27 @@ Need a custom icon on any file/folder? Use `set-icon.sh` (no extra tools, uses s
 ./set-icon.sh assets/AppIcon.icns ~/Desktop/launcher.command
 ```
 
-Icons live in `assets/` — `AppIcon.icns` (multi-size) and the original `favicon.svg` (official DSH whale, from the DeepSeek Harness web frontend).
+Icons live in `assets/` — `AppIcon.icns` (multi-size), the 1024px sources, and the original `favicon.svg` (official DSH whale, from the DeepSeek Harness web frontend).
 
-图标资源在 `assets/`：`AppIcon.icns`（多尺寸）和原始 `favicon.svg`（DSH 官方鲸鱼，取自 DeepSeek Harness Web 前端）。
+图标资源在 `assets/`：`AppIcon.icns`（多尺寸）、1024px 源图和原始 `favicon.svg`（DSH 官方鲸鱼，取自 DeepSeek Harness Web 前端）。
+
+**Icon design (macOS HIG):** white rounded-square background — 1024×1024 canvas, 824×824 content area centered with **185.4px corner radius** (Big Sur icon grid), whale at 75% of content width. Two variants:
+
+**图标设计（macOS 规范）**：白底圆角方形——1024 画布、居中 824×824 内容区、**圆角 185.4px**（Big Sur 图标网格）、鲸鱼占内容区宽度 75%。两个版本：
+
+- `AppIcon-1024.png` / `AppIcon.icns` — square white bg; macOS applies the rounded mask itself (for `.app`)
+- `AppIcon-rounded-1024.png` — rounded white bg baked in (for file icons via `set-icon.sh`, which get no system mask)
+
+- `AppIcon-1024.png` / `AppIcon.icns` — 方形白底，圆角由 macOS 系统遮罩自动切（.app 用）
+- `AppIcon-rounded-1024.png` — 圆角直接做进图里（.command 等文件图标用，系统不给文件图标加遮罩）
+
+Regenerate / tweak anytime (e.g. change `WHALE_PCT`):
+
+随时可重新生成/调整参数（如改 `WHALE_PCT`）：
+
+```bash
+python3 generate-icon.py assets/favicon.svg   # requires svglib+reportlab
+```
 
 ## Quick start / 快速开始
 
