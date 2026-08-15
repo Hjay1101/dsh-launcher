@@ -59,46 +59,112 @@ PLIST
 
 cat > "$APP_PATH/Contents/MacOS/launcher" <<'LAUNCHER'
 #!/bin/bash
-# DeepSeek Harness app launcher — boots dsh web in a Terminal window
-# and opens the browser when ready. Ctrl+C in the Terminal stops it.
-#
-# Workspace: $DSH_WORKSPACE, falling back to the current directory.
-
-WORKSPACE="${DSH_WORKSPACE:-$(pwd)}"
-PORT=3080
+# DeepSeek Harness app launcher
+# - server already running -> just open the browser
+# - otherwise -> `open -a Terminal` runs Resources/boot.command
+#   (LaunchServices file-open, NOT Apple Events: no TCC automation
+#   permission prompt, works reliably on first double-click)
+PORT="${DSH_PORT:-3080}"
 URL="http://127.0.0.1:${PORT}"
+APP_ROOT="$(cd "$(dirname "$0")" && cd .. && pwd)"   # -> Contents/
+BOOT_CMD="$APP_ROOT/Resources/boot.command"
 
-# already running -> just open the browser
 if lsof -nP -iTCP:${PORT} -sTCP:LISTEN >/dev/null 2>&1; then
   open "$URL"
   exit 0
 fi
 
-# find dsh: PATH first, then npx (downloads on first run)
-if command -v dsh >/dev/null 2>&1; then
-  DSH_CMD="$(command -v dsh) web"
+if [[ -f "$BOOT_CMD" ]]; then
+  chmod +x "$BOOT_CMD"
+  open -a Terminal "$BOOT_CMD"
 else
-  DSH_CMD="npx --yes @deepseek-ai/dsh web"
+  osascript -e "display dialog \"Cannot find $BOOT_CMD\" buttons {\"OK\"} with icon caution" 2>/dev/null || true
+  exit 1
+fi
+exit 0
+LAUNCHER
+
+cat > "$APP_PATH/Contents/Resources/boot.command" <<'BOOTCMD'
+#!/bin/bash
+# DeepSeek Harness boot.command — run by `open -a Terminal`
+# Boots dsh web in a Terminal window and opens the browser when ready.
+# Ctrl+C stops. Workspace: $DSH_WORKSPACE or current dir.
+
+WORKSPACE="${DSH_WORKSPACE:-$(pwd)}"
+PORT="${DSH_PORT:-3080}"
+URL="http://127.0.0.1:${PORT}"
+
+cd "$WORKSPACE" 2>/dev/null || cd ~
+
+echo "=============================================="
+echo "  DeepSeek Harness Web"
+echo "  地址: ${URL}  |  停止: Ctrl+C"
+echo "=============================================="
+echo ""
+
+if lsof -nP -iTCP:${PORT} -sTCP:LISTEN >/dev/null 2>&1; then
+  open "$URL"
+  echo "✅ 服务已在运行，已打开浏览器。"
+  exit 0
 fi
 
-TERM_CMD="echo '=============================================='; echo '  DeepSeek Harness Web'; echo '  地址: ${URL}  |  停止: Ctrl+C'; echo '=============================================='; echo ''; cd \"$WORKSPACE\" 2>/dev/null || cd ~; exec $DSH_CMD; "
+# GUI-launched processes have a minimal PATH: make sure node & dsh are
+# reachable (nvm first, /usr/local last to avoid an old node shadowing).
+for NODE_DIR in \
+  "$HOME/.nvm/versions/node/"*/bin \
+  "$HOME/.volta/bin" "$HOME/.local/bin" "$HOME/bin" \
+  /opt/homebrew/bin /usr/local/bin; do
+  if [[ -x "$NODE_DIR/node" || -x "$NODE_DIR/dsh" ]]; then
+    case ":$PATH:" in
+      *":$NODE_DIR:"*) ;;
+      *) PATH="$NODE_DIR:$PATH" ;;
+    esac
+  fi
+done
+export PATH
 
-osascript -e "tell application \"Terminal\"" \
-          -e "activate" \
-          -e "do script \"$TERM_CMD\"" \
-          -e "end tell" 2>/dev/null
+find_dsh() {
+  if command -v dsh >/dev/null 2>&1; then
+    command -v dsh; return 0
+  fi
+  local latest=""
+  local d
+  for d in "$HOME"/.npm/_npx/*/node_modules/.bin/dsh; do
+    [[ -x "$d" ]] && latest="$d"
+  done
+  if [[ -n "$latest" ]]; then
+    echo "$latest"; return 0
+  fi
+  echo "npx"
+}
+
+DSH="$(find_dsh)"
+echo "🚀 启动 dsh: $DSH"
+
+if [[ "$DSH" == "npx" ]]; then
+  npx --yes @deepseek-ai/dsh web &
+else
+  "$DSH" web &
+fi
+SERVER_PID=$!
+trap 'kill "$SERVER_PID" 2>/dev/null || true' INT TERM
 
 for i in $(seq 1 60); do
   if lsof -nP -iTCP:${PORT} -sTCP:LISTEN >/dev/null 2>&1; then
     sleep 1
     open "$URL"
-    exit 0
+    echo "🌐 已在浏览器打开: $URL"
+    break
   fi
   sleep 1
 done
-LAUNCHER
 
-chmod +x "$APP_PATH/Contents/MacOS/launcher"
+wait "$SERVER_PID"
+echo ""
+echo "⏹ 服务已停止，窗口可关闭。"
+BOOTCMD
+
+chmod +x "$APP_PATH/Contents/MacOS/launcher" "$APP_PATH/Contents/Resources/boot.command"
 cp "$SCRIPT_DIR/assets/AppIcon.icns" "$APP_PATH/Contents/Resources/AppIcon.icns"
 
 # Sign the bundle (ad-hoc). macOS refuses to launch unsigned .app bundles,
