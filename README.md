@@ -28,13 +28,13 @@ Want a real app on your Desktop / Dock with the DeepSeek whale icon? We build on
 ./build-app.sh ~/Documents        # → custom output dir
 ```
 
-Double-click the app → it opens a Terminal window, boots `dsh web` in `$DSH_WORKSPACE` (or current dir), and opens the browser when ready. `Ctrl+C` in the Terminal stops it. Drag the app to the Dock for one-click access.
+Double-click the app → it silently boots `dsh web` in the background (no Terminal window), then opens the browser when ready. **Close the app = stop the service**: right-click the Dock icon → Quit (or Cmd+Q) — the launcher kills `dsh` before exiting. Logs go to `$WORKSPACE/.dsh/dsh.log` (falls back to `~/.dsh/dsh.log`). Drag the app to the Dock for one-click access.
 
-双击 .app → 自动弹出终端窗口启动 `dsh web`（工作区取 `$DSH_WORKSPACE` 或当前目录），就绪后打开浏览器；终端里 Ctrl+C 停止。可拖到程序坞。
+双击 .app → **完全静默**后台启动 `dsh web`（无终端窗口），就绪后自动打开浏览器。**关闭 app 即关闭服务**：Dock 图标右键 → 退出（或 Cmd+Q），launcher 会先停掉 dsh 再退出。日志在 `$WORKSPACE/.dsh/dsh.log`（工作区不可写时回退 `~/.dsh/dsh.log`）。可拖到程序坞。
 
-**How it boots:** the launcher runs `Resources/boot.command` via `open -a Terminal` — a normal LaunchServices file-open, **not** Apple Events. This avoids the TCC automation-permission prompt that breaks `osascript`-based launchers on first double-click. `boot.command` also patches in common `node`/`dsh` PATH locations (GUI-launched processes have a minimal PATH).
+**How it works:** the launcher stays alive as the parent of `dsh` — Dock icon lit = service running. On Quit, macOS sends SIGTERM and the launcher kills its `dsh` child first, so the service stops with the app. It also patches common `node`/`dsh` PATH locations (GUI-launched processes have a minimal PATH; nvm's default Node wins over `/usr/local`).
 
-**启动机制**：launcher 用 `open -a Terminal` 打开 `Resources/boot.command`——走 LaunchServices 正常文件打开，**不是 Apple Events**，因此不会触发 TCC 自动化授权弹窗（这是 osascript 方案首次双击失效的原因）。boot.command 还会自动补全常见 node/dsh 路径（GUI 启动的进程 PATH 很精简）。
+**工作原理**：launcher 作为 dsh 的父进程保持存活——Dock 图标亮着 = 服务在跑；退出时 macOS 发 SIGTERM，launcher 先杀掉 dsh 子进程再退出，服务随之停止。同时自动补全常见 node/dsh 路径（GUI 启动的进程 PATH 精简，且 nvm 默认 Node 优先于 /usr/local 的旧版本）。
 
 The build script automatically ad-hoc **signs** the bundle (`codesign`), which macOS requires — without a signature the app silently refuses to open on double-click.
 
