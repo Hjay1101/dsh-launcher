@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-"""make-cover.py — generate the minimal social cover (Xiaohongshu 3:4, 1080x1440)
+"""make-cover.py — minimal social cover (Xiaohongshu 3:4, 1080x1440)
 
-Design goal: hook on the whale icon, keep copy minimal so readers click in.
-  - deep blue-black gradient background
-  - large rounded whale icon as the visual hero
-  - one-line title (DeepSeek Harness · 轻量启动器)
-  - one-line subtle hook + GitHub handle at the bottom
-
-Usage:
-  python3 make-cover.py [output.png]
-  (default output: assets/xiaohongshu-cover.png)
-
-Requires: python3 + Pillow, macOS PingFang/Heiti fonts (adjust if not present).
+Design: whale icon as visual hero + one punch headline (Option D) +
+a line emphasising the whale's looks, minimal body copy so readers
+click through. Reproducible: tweak TITLE_MAIN/TITLE_SUB/HOOK and re-run.
 """
 import os
 import sys
@@ -26,21 +18,21 @@ ICON_PATHS = [
     "/Users/doudou/Desktop/dsh-launcher/assets/AppIcon-rounded-1024.png",
 ]
 
-TITLE_MAIN = "DeepSeek Harness"
-TITLE_SUB = "轻量启动器"
-HOOK = "原生 · 开箱即用"
+TITLE_MAIN = "为这只鲸鱼"
+TITLE_SUB = "我做了个启动器"
+HOOK = "🐋 鲸鱼图标 · 颜值在线"
 GITHUB = "github.com/Hjay1101/dsh-launcher"
 
 
 def vertical_gradient(w, h, top, bottom):
-    base = Image.new("RGB", (w, h))
-    d = ImageDraw.Draw(base)
+    img = Image.new("RGB", (w, h))
+    d = ImageDraw.Draw(img)
     for y in range(h):
         r = top[0] + (bottom[0] - top[0]) * y // h
         g = top[1] + (bottom[1] - top[1]) * y // h
         b = top[2] + (bottom[2] - top[2]) * y // h
         d.line([(0, y), (w, y)], fill=(r, g, b))
-    return base
+    return img
 
 
 def center_text(d, text, y, size, fill, path=FONT_MEDIUM):
@@ -54,7 +46,7 @@ def find_icon():
     for p in ICON_PATHS:
         if os.path.exists(p):
             return p
-    raise SystemExit("whale icon not found — run from repo root or pass assets/")
+    raise SystemExit("whale icon not found")
 
 
 def main():
@@ -65,17 +57,25 @@ def main():
     img = vertical_gradient(W, H, (16, 20, 28), (30, 42, 60))
     d = ImageDraw.Draw(img)
 
-    # large whale icon as visual hero
+    # large whale icon as visual hero (upper area, leaves room for text)
     icon = Image.open(find_icon()).convert("RGBA")
-    iw = 560
+    iw = 600
     icon = icon.resize((iw, iw), Image.LANCZOS)
-    img.paste(icon, ((W - iw) // 2, 170), icon)
+    img.paste(icon, ((W - iw) // 2, 110), icon)
 
-    # minimal title
-    y = center_text(d, TITLE_MAIN, 820, 74, (255, 255, 255))
-    y = center_text(d, TITLE_SUB, y, 60, (102, 194, 255))
-    y += 20
-    y = center_text(d, HOOK, y, 34, (170, 185, 210), FONT_LIGHT)
+    # punch headline (two lines) below the icon
+    y = center_text(d, TITLE_MAIN, 800, 88, (255, 255, 255))
+    y = center_text(d, TITLE_SUB, y, 88, (255, 255, 255))
+
+    # small dot separators between headline and hook
+    y += 16
+    dot_cx = W // 2
+    for dx in (-90, 0, 90):
+        d.ellipse([dot_cx + dx - 5, y, dot_cx + dx + 5, y + 10], fill=(102, 194, 255))
+    y += 30
+
+    # hook line emphasising the whale's looks
+    y = center_text(d, HOOK, y, 40, (140, 200, 255), FONT_LIGHT)
 
     # footer
     d.line([(W // 2 - 220, H - 190), (W // 2 + 220, H - 190)], fill=(60, 75, 100), width=2)
