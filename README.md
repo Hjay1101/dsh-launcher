@@ -15,6 +15,35 @@ DSH 的 Web 界面必须在「你想作为工作区根目录的目录」下启�
 - ✅ Skip startup if the server is already running — just open the browser
 - ✅ Wait for the port, then auto-open the browser
 - ✅ Custom port / workspace / binary via CLI args or env vars
+- ✅ macOS: build a native **DeepSeek Harness.app** with the official whale icon (Dock-ready)
+
+## macOS app & icon / macOS 应用与图标
+
+Want a real app on your Desktop / Dock with the DeepSeek whale icon? We build one:
+
+想要桌面/程序坞上带鲸鱼图标的原生应用？仓库自带构建脚本：
+
+```bash
+./build-app.sh                    # → ~/Desktop/DeepSeek Harness.app
+./build-app.sh ~/Documents        # → custom output dir
+```
+
+Double-click the app → it opens a Terminal window, boots `dsh web` in `$DSH_WORKSPACE` (or current dir), and opens the browser when ready. `Ctrl+C` in the Terminal stops it. Drag the app to the Dock for one-click access.
+
+双击 .app → 自动弹出终端窗口启动 `dsh web`（工作区取 `$DSH_WORKSPACE` 或当前目录），就绪后打开浏览器；终端里 Ctrl+C 停止。可拖到程序坞。
+
+Need a custom icon on any file/folder? Use `set-icon.sh` (no extra tools, uses system AppKit):
+
+想给任意文件/文件夹设置自定义图标？用 `set-icon.sh`（零依赖，走系统 AppKit）：
+
+```bash
+./set-icon.sh assets/favicon.svg ~/Desktop/MyFolder
+./set-icon.sh assets/AppIcon.icns ~/Desktop/launcher.command
+```
+
+Icons live in `assets/` — `AppIcon.icns` (multi-size) and the original `favicon.svg` (official DSH whale, from the DeepSeek Harness web frontend).
+
+图标资源在 `assets/`：`AppIcon.icns`（多尺寸）和原始 `favicon.svg`（DSH 官方鲸鱼，取自 DeepSeek Harness Web 前端）。
 
 ## Quick start / 快速开始
 
