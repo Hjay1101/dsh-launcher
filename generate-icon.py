@@ -2,12 +2,15 @@
 """generate-icon.py — build the DeepSeek Harness app icon (macOS HIG)
 
 Produces:
-  assets/AppIcon-1024.png           square white background (for .icns; macOS
-                                    applies the rounded-corner mask itself)
-  assets/AppIcon-rounded-1024.png   white rounded-square background (for file
-                                    icons set via set-icon.sh, which get no
-                                    system mask)
-  assets/AppIcon.icns               multi-size .icns from the square version
+  assets/AppIcon-1024.png           square white background (for reference)
+  assets/AppIcon-rounded-1024.png   white rounded-square background (file
+                                    icons via set-icon.sh)
+  assets/AppIcon.icns               multi-size .icns from the ROUNDED variant
+
+Why rounded in the .icns: macOS only applies the automatic rounded-corner
+mask to properly distributed/signed apps. Ad-hoc-signed custom .app bundles
+(like the one build-app.sh produces) show icons as-is — so the rounded
+background must be baked into the icon itself.
 
 Spec (macOS Big Sur icon grid):
   canvas 1024x1024, content area 824x824 centered, corner radius 185.4px,
@@ -110,8 +113,11 @@ def main():
         square = compose(whale_png, rounded=False)
         square.save(os.path.join(out_dir, "AppIcon-1024.png"))
 
+        # .icns uses the ROUNDED variant: ad-hoc-signed custom .app bundles
+        # do NOT get the automatic macOS rounded-corner mask, so the rounded
+        # background must be baked into the icon itself (same as file icons).
         icns = os.path.join(out_dir, "AppIcon.icns")
-        build_icns(os.path.join(out_dir, "AppIcon-1024.png"), icns)
+        build_icns(os.path.join(out_dir, "AppIcon-rounded-1024.png"), icns)
 
     print("✅ assets/AppIcon-1024.png")
     print("✅ assets/AppIcon-rounded-1024.png")
