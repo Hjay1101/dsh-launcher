@@ -101,6 +101,10 @@ LAUNCHER
 chmod +x "$APP_PATH/Contents/MacOS/launcher"
 cp "$SCRIPT_DIR/assets/AppIcon.icns" "$APP_PATH/Contents/Resources/AppIcon.icns"
 
+# Sign the bundle (ad-hoc). macOS refuses to launch unsigned .app bundles,
+# so this step is REQUIRED — without it double-clicking does nothing.
+codesign --force --deep --sign - "$APP_PATH" >/dev/null 2>&1
+
 echo "✅ Built: $APP_PATH"
 echo "   Double-click it to launch. Set DSH_WORKSPACE to change the workspace."
 echo "   Or run: DSH_WORKSPACE=/path/to/workspace open \"$APP_PATH\""

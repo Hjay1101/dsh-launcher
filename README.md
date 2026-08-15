@@ -32,6 +32,10 @@ Double-click the app → it opens a Terminal window, boots `dsh web` in `$DSH_WO
 
 双击 .app → 自动弹出终端窗口启动 `dsh web`（工作区取 `$DSH_WORKSPACE` 或当前目录），就绪后打开浏览器；终端里 Ctrl+C 停止。可拖到程序坞。
 
+The build script automatically ad-hoc **signs** the bundle (`codesign`), which macOS requires — without a signature the app silently refuses to open on double-click.
+
+构建脚本会自动对应用做 **ad-hoc 签名**（macOS 强制要求，未签名的 .app 双击会毫无反应打不开）。
+
 Need a custom icon on any file/folder? Use `set-icon.sh` (no extra tools, uses system AppKit):
 
 想给任意文件/文件夹设置自定义图标？用 `set-icon.sh`（零依赖，走系统 AppKit）：
