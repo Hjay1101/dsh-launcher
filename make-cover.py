@@ -15,13 +15,13 @@ FONT_LIGHT = "/System/Library/Fonts/STHeiti Light.ttc"
 
 ICON_PATHS = [
     os.path.join(os.path.dirname(__file__), "assets", "AppIcon-rounded-1024.png"),
-    "/Users/doudou/Desktop/dsh-launcher/assets/AppIcon-rounded-1024.png",
+    "/Users/doudou/Desktop/dsh plugin/dsh-launcher/assets/AppIcon-rounded-1024.png",
 ]
 
 TITLE_MAIN = "为这只鲸鱼"
 TITLE_SUB = "我做了个极简启动器"
 HOOK = "🐋 鲸鱼图标 · 颜值在线"
-GITHUB = "github.com/Hjay1101/dsh-launcher"
+GITHUB = "dsh-launcher"
 
 
 def vertical_gradient(w, h, top, bottom):
