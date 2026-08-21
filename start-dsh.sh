@@ -97,6 +97,49 @@ PATH="${EXTRA#:}:$PATH"
 export PATH
 # ---------- 结束 ----------
 
+# ---------- 系统代理注入（DSH 的 Node 客户端默认不走系统代理）----------
+# 用途: 让 dsh web 的 LLM 请求走系统 HTTP/HTTPS 代理，解决地区限制类 403
+#      （如 gpt-5.6-luna 的 "This model is not available in your region"）。
+# 覆盖: DSH_PROXY_URL 显式指定代理；DSH_PROXY_DISABLE=1 完全禁用本段。
+# 默认: 自动读取 macOS 系统代理设置（scutil --proxy）。
+# 注意: Node 需支持 --use-env-proxy（Node ≥ 22）；不支持时退化为不注入。
+if [[ "${DSH_PROXY_DISABLE:-0}" != "1" ]]; then
+  if [[ -n "${DSH_PROXY_URL:-}" ]]; then
+    PROXY_URL="$DSH_PROXY_URL"
+    log "使用显式 DSH_PROXY_URL: $PROXY_URL"
+  else
+    PROXY_URL="$(python3 - <<'PY' 2>/dev/null
+import subprocess, re
+try:
+    out = subprocess.run(['scutil', '--proxy'], capture_output=True, text=True, timeout=5).stdout
+    m = re.search(r'HTTPSProxy\s*:\s*(\S+)', out)
+    p = re.search(r'HTTPSPort\s*:\s*(\d+)', out)
+    if m and p:
+        print(f'http://{m.group(1)}:{p.group(1)}')
+except Exception:
+    pass
+PY
+)"
+    [[ -n "$PROXY_URL" ]] && log "自动检测系统代理: $PROXY_URL"
+  fi
+  if [[ -n "$PROXY_URL" ]]; then
+    export HTTPS_PROXY="$PROXY_URL"
+    export HTTP_PROXY="$PROXY_URL"
+    export https_proxy="$PROXY_URL"
+    export http_proxy="$PROXY_URL"
+    # Node ≥ 22 的全局 fetch 通过 --use-env-proxy 读取代理环境变量
+    if node -e "process.exit(process.versions.node.split('.')[0] >= 22 ? 0 : 1)" 2>/dev/null; then
+      export NODE_OPTIONS="${NODE_OPTIONS:-} --use-env-proxy"
+      log "已注入代理 $PROXY_URL + NODE_OPTIONS=--use-env-proxy"
+    else
+      log "⚠ Node 版本过低，无法启用 --use-env-proxy，代理注入不生效"
+    fi
+  else
+    log "未检测到系统 HTTPS 代理，跳过代理注入"
+  fi
+fi
+# ---------- 结束 ----------
+
 # ---------- 已在运行？(HTTP 探活) ----------
 if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --max-time 1 "$URL" 2>/dev/null; then
   log "Harness 已在运行（$URL）→ 直接 open 浏览器"
@@ -133,10 +176,13 @@ log "定位 dsh: $DSH"
 } >> "$LOG_FILE"
 
 # ---------- 启动 dsh web ----------
+# --no-open: dsh web 自身默认会弹一次浏览器，launcher 却在探活成功后
+#           又 open 一次 → 双击 app 会开两个网页。这里关掉内建 open，
+#           只保留本脚本探活后的那一次（否则会重复）。
 if [[ "$DSH" == "npx" ]]; then
-  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
+  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
 else
-  "$DSH" web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
+  "$DSH" web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
 fi
 SERVER_PID=$!
 # ---------- 结束 ----------
