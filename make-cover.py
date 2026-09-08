@@ -15,7 +15,6 @@ FONT_LIGHT = "/System/Library/Fonts/STHeiti Light.ttc"
 
 ICON_PATHS = [
     os.path.join(os.path.dirname(__file__), "assets", "AppIcon-rounded-1024.png"),
-    "/Users/doudou/Desktop/dsh plugin/dsh-launcher/assets/AppIcon-rounded-1024.png",
 ]
 
 TITLE_MAIN = "为这只鲸鱼"

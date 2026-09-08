@@ -26,7 +26,7 @@ DSH 的 Web 界面必须在「你想作为工作区根目录的目录」下启�
 - ✅ `cd` into your workspace automatically
 - ✅ Detect the `dsh` binary (PATH → npx cache → fallback to `npx`)
 - ✅ Skip startup if the server is already running — just open the browser
-- ✅ Random free port by default (set `DSH_PORT` for a fixed port) — no port conflicts
+- ✅ Fixed port 3080 by default (`DSH_RANDOM_PORT=1` for a random free port) — predictable URL
 - ✅ HTTP readiness probe (opens the browser only when Harness really responds)
 - ✅ macOS: build a native **DeepSeek Harness.app** with the official whale icon (Dock-ready)
 - ✅ Isolated app data dir (`DSH_HOME`) for the `.app` — separate from the system `~/.dsh`
@@ -47,12 +47,12 @@ Double-click the app → it silently boots `dsh web` in the background (no Termi
 双击 .app → **完全静默**后台启动 `dsh web`（无终端窗口），就绪后自动打开浏览器。**关闭 app 即关闭服务**：Dock 图标右键 → 退出（或 Cmd+Q），launcher 会先停掉 dsh 再退出。日志在 `$WORKSPACE/.dsh/dsh.log`（工作区不可写时回退 `~/.dsh/dsh.log`）。可拖到程序坞。
 
 **New in this version:**
-- **Random free port** by default — the `.app` picks an unused port on every launch, so it never collides with other software (set `DSH_PORT=3080` to force a fixed, memorable URL).
+- **Fixed port 3080** by default — the `.app` uses a predictable URL (`DSH_RANDOM_PORT=1` to pick a random free port and avoid conflicts).
 - **Isolated app data (DSH_HOME)** — the `.app` uses `~/Library/Application Support/DeepSeek Harness/dsh` as its data dir, separate from the CLI's `~/.dsh`. On first run it auto-migrates `profiles/` and `plugins/`. (The `.command`/CLI keeps using `~/.dsh`.)
 - **HTTP readiness probe** — the browser opens only after Harness actually responds over HTTP (not just "port is open"); startup failures show a clear dialog instead of silently failing.
 
 **本版新增：**
-- **随机空闲端口**（默认）：每次启动自动挑未占用端口，永不与其他软件冲突（设 `DSH_PORT=3080` 可强制固定、好记）。
+- **固定端口 3080**（默认）：启动地址可预测（设 `DSH_RANDOM_PORT=1` 可改为随机空闲端口，避免冲突）。
 - **应用专属数据目录**：`.app` 用 `~/Library/Application Support/DeepSeek Harness/dsh` 当 DSH_HOME，与 CLI 的 `~/.dsh` 隔离；首次运行自动迁移 `profiles/` 和 `plugins/`。（`.command`/CLI 仍用 `~/.dsh`。）
 - **HTTP 就绪探测**：Harness 真正能响应后再开浏览器（而非只看端口通）；启动失败会弹清晰提示，不再静默失败。
 

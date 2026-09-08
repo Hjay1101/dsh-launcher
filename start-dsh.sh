@@ -4,14 +4,14 @@
 #  开源: https://github.com/Hjay1101/dsh-launcher (MIT)
 #
 #  职责：
-#    - 用随机空闲端口（或 DSH_PORT 指定的固定端口）启动 dsh web
+#    - 用固定端口 3080（DSH_RANDOM_PORT=1 时随机空闲端口）启动 dsh web
 #    - 用应用专属 DSH_HOME（与系统 ~/.dsh 隔离；CLI 用 ~/.dsh）
 #    - HTTP 探活确认 Harness 真就绪，失败给出可操作提示
 #    - wait 保持 dsh 子进程存活（原生 launcher 管 Dock + 生命周期）
 # ============================================================
 
 # ---------- 配置（可用环境变量覆盖） ----------
-WORKSPACE="${DSH_WORKSPACE:-/Users/doudou/Desktop/SellerFocus Agent}"
+WORKSPACE="${DSH_WORKSPACE:-$HOME}"
 HOST="127.0.0.1"
 # ---------- 结束 ----------
 
@@ -47,11 +47,8 @@ if [[ -z "$DSH_HOME" && "$(basename "$(dirname "$(dirname "$0")")")" == "DeepSee
 fi
 # ---------- 结束 ----------
 
-# ---------- 随机空闲端口（① 默认随机，DSH_PORT 指定则固定）----------
-if [[ -n "${DSH_PORT:-}" ]]; then
-  PORT="$DSH_PORT"
-  log "使用指定固定端口: $PORT"
-else
+# ---------- 端口（默认固定 3080，与 .command 一致；DSH_RANDOM_PORT=1 时随机）----------
+if [[ "${DSH_RANDOM_PORT:-0}" == "1" ]]; then
   PORT="$(python3 - <<'PY' 2>/dev/null
 import socket
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,6 +59,9 @@ PY
 )"
   [[ -z "$PORT" ]] && PORT=3080   # 兜底
   log "随机分配空闲端口: $PORT"
+else
+  PORT="${DSH_PORT:-3080}"
+  log "使用端口: $PORT"
 fi
 URL="http://${HOST}:${PORT}"
 # ---------- 结束 ----------
@@ -140,10 +140,23 @@ PY
 fi
 # ---------- 结束 ----------
 
+# ---------- 工具函数：取 dsh web 打印的带 token 认证 URL ----------
+get_auth_url() {
+  local parsed
+  parsed="$(grep '^dsh web: http' "$LOG_FILE" 2>/dev/null | tail -n 1 | sed -E 's/^dsh web: ([^ ]+).*/\1/')"
+  if [[ -n "$parsed" ]]; then
+    echo "$parsed"
+  else
+    echo "$URL"
+  fi
+}
+# ---------- 结束 ----------
+
 # ---------- 已在运行？(HTTP 探活) ----------
 if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null --max-time 1 "$URL" 2>/dev/null; then
-  log "Harness 已在运行（$URL）→ 直接 open 浏览器"
-  open "$URL"
+  AUTH_URL="$(get_auth_url)"
+  log "Harness 已在运行（$AUTH_URL）→ 直接 open 浏览器"
+  open "$AUTH_URL"
   log "open 已执行 exit=$?"
   while true; do sleep 3600; done   # 保持脚本，让 Dock 稳定
 fi
@@ -176,13 +189,13 @@ log "定位 dsh: $DSH"
 } >> "$LOG_FILE"
 
 # ---------- 启动 dsh web ----------
-# --no-open: dsh web 自身默认会弹一次浏览器，launcher 却在探活成功后
-#           又 open 一次 → 双击 app 会开两个网页。这里关掉内建 open，
-#           只保留本脚本探活后的那一次（否则会重复）。
+# 不再使用 --no-open：让 dsh web 自己用带 token 的认证 URL 打开浏览器，
+# 和 .command 行为完全一致。脚本探活后也不再用 open 打开裸地址，
+# 避免出现 "dsh web authentication required"。
 if [[ "$DSH" == "npx" ]]; then
-  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
+  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
 else
-  "$DSH" web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
+  "$DSH" web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
 fi
 SERVER_PID=$!
 # ---------- 结束 ----------
@@ -223,9 +236,9 @@ done
 
 if [[ "$ready" == "1" ]]; then
   sleep 1
-  open "$URL"
-  log "✅ Harness 就绪 → open 浏览器 exit=$?"
-  echo "✅ 服务已启动: $URL （日志: $LOG_FILE）" >> "$LOG_FILE"
+  AUTH_URL="$(get_auth_url)"
+  log "✅ Harness 就绪，已交由 dsh 自动打开浏览器（$AUTH_URL）"
+  echo "✅ 服务已启动: $AUTH_URL （日志: $LOG_FILE）" >> "$LOG_FILE"
 else
   log "⏱ $STARTUP_TIMEOUT 秒内未就绪，启动失败"
   echo "❌ DeepSeek Harness 未能在 ${STARTUP_TIMEOUT}s 内就绪。" >> "$LOG_FILE"
