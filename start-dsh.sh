@@ -22,6 +22,7 @@ else
   LOG_DIR="$HOME/.dsh"
 fi
 LOG_FILE="$LOG_DIR/dsh.log"
+LOG_START_LINE=0
 # ---------- 结束 ----------
 
 log() { echo "[$(date '+%H:%M:%S')] $*" >> "$LOG_FILE"; }
@@ -127,6 +128,10 @@ PY
     export HTTP_PROXY="$PROXY_URL"
     export https_proxy="$PROXY_URL"
     export http_proxy="$PROXY_URL"
+    # 回环地址绝不走代理：iOS 网关等组件需要直连本机 dsh web。
+    # 否则 Clash 退出后本机上游请求会 502 / ECONNREFUSED。
+    export NO_PROXY="127.0.0.1,localhost${NO_PROXY:+,$NO_PROXY}"
+    export no_proxy="$NO_PROXY"
     # Node ≥ 22 的全局 fetch 通过 --use-env-proxy 读取代理环境变量
     if node -e "process.exit(process.versions.node.split('.')[0] >= 22 ? 0 : 1)" 2>/dev/null; then
       export NODE_OPTIONS="${NODE_OPTIONS:-} --use-env-proxy"
@@ -142,13 +147,21 @@ fi
 
 # ---------- 工具函数：取 dsh web 打印的带 token 认证 URL ----------
 get_auth_url() {
-  local parsed
-  parsed="$(grep '^dsh web: http' "$LOG_FILE" 2>/dev/null | tail -n 1 | sed -E 's/^dsh web: ([^ ]+).*/\1/')"
-  if [[ -n "$parsed" ]]; then
-    echo "$parsed"
-  else
-    echo "$URL"
-  fi
+  local parsed i
+  # 只取本次启动之后、且端口匹配的 dsh web 行，避免多实例共写日志时拿到过期地址。
+  # dsh 就绪后才会打印带 token 的地址，这里最多等 10 秒。
+  for i in $(seq 1 10); do
+    parsed="$(tail -n +$((LOG_START_LINE + 1)) "$LOG_FILE" 2>/dev/null \
+      | grep "^dsh web: http://${HOST}:${PORT}/" \
+      | tail -n 1 | sed -E 's/^dsh web: ([^ ]+).*/\1/')"
+    if [[ -n "$parsed" ]]; then
+      echo "$parsed"
+      return 0
+    fi
+    sleep 1
+  done
+  log "⚠ 未等到 dsh 打印带 token 的地址，回退为无 token 地址"
+  echo "$URL"
 }
 # ---------- 结束 ----------
 
@@ -189,13 +202,14 @@ log "定位 dsh: $DSH"
 } >> "$LOG_FILE"
 
 # ---------- 启动 dsh web ----------
-# 不再使用 --no-open：让 dsh web 自己用带 token 的认证 URL 打开浏览器，
-# 和 .command 行为完全一致。脚本探活后也不再用 open 打开裸地址，
-# 避免出现 "dsh web authentication required"。
+# --no-open: dsh web 自身默认会弹一次浏览器，launcher 却在探活成功后
+#           又 open 一次 → 双击 app 会开两个网页。这里关掉内建 open，
+#           只保留本脚本探活后的那一次（否则会重复）。
+[[ -f "$LOG_FILE" ]] && LOG_START_LINE=$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)
 if [[ "$DSH" == "npx" ]]; then
-  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
+  npx --yes @deepseek-ai/dsh web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
 else
-  "$DSH" web --host "$HOST" --port "$PORT" >> "$LOG_FILE" 2>&1 &
+  "$DSH" web --host "$HOST" --port "$PORT" --no-open >> "$LOG_FILE" 2>&1 &
 fi
 SERVER_PID=$!
 # ---------- 结束 ----------
@@ -237,7 +251,8 @@ done
 if [[ "$ready" == "1" ]]; then
   sleep 1
   AUTH_URL="$(get_auth_url)"
-  log "✅ Harness 就绪，已交由 dsh 自动打开浏览器（$AUTH_URL）"
+  open "$AUTH_URL"
+  log "✅ Harness 就绪 → open 浏览器（$AUTH_URL）exit=$?"
   echo "✅ 服务已启动: $AUTH_URL （日志: $LOG_FILE）" >> "$LOG_FILE"
 else
   log "⏱ $STARTUP_TIMEOUT 秒内未就绪，启动失败"
