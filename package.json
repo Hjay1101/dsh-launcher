@@ -1,0 +1,42 @@
+{
+	"name": "dsh-launcher",
+	"version": "1.0.0",
+	"description": "Native macOS launcher for DeepSeek Harness Web — CLI, double-click .command and a ~200 KB Cocoa app; also a DSH plugin that adds a Launcher section to Settings with install commands and release links.",
+	"license": "MIT",
+	"keywords": [
+		"deepseek-harness",
+		"dsh",
+		"plugin",
+		"launcher",
+		"macos",
+		"native"
+	],
+	"type": "module",
+	"main": "./index.js",
+	"files": [
+		"index.js",
+		"client.js",
+		"cordis.patch.yml",
+		"package.json",
+		"README.md",
+		"README.zh.md",
+		"LICENSE"
+	],
+	"dsh": {
+		"client": {
+			"inject": [],
+			"platform": "web"
+		},
+		"bundle": {
+			"patch": "./cordis.patch.yml"
+		}
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Hjay1101/dsh-launcher.git"
+	},
+	"author": "Hjay1101",
+	"peerDependencies": {
+		"react": "^18.2.0"
+	}
+}

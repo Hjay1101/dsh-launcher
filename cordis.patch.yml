@@ -1,0 +1,6 @@
+# dsh-launcher —— profile bundle patch.
+# 让「安装即生效」：把插件插进 profile，Settings 侧栏出现 Launcher 分区
+# （安装命令 / 三种启动形态 / 下载链接），无需用户手动维护 insert。
+- insert:
+    - id: launcher
+      name: 'dsh-launcher'

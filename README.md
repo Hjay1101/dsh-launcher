@@ -177,6 +177,17 @@ dsh-launcher -w ~/my-workspace
 
 Press `Ctrl+C` in the terminal window that runs the launcher.
 
+## Also a DSH plugin / 同时也是一个 DSH 插件
+
+The repo ships a Cordis bundle: install it via `dsh plugin add` (or a plugin market) and a
+**Launcher** section appears under Settings — install commands with one-click copy, the three
+launcher forms and release links, in your UI language. No host services, no routes, no network
+calls; theming follows the harness `--dsw-alias-*` variables in dark and light.
+
+本仓库同时是可安装的 DSH 插件（Cordis bundle）：安装后 Settings 侧栏出现 **Launcher** 分区——
+一键复制的安装命令、三种启动形态与下载链接，跟随界面语言。无 host 服务、无路由、无网络请求；
+配色跟随 harness 的 `--dsw-alias-*` 主题变量，深浅色自适应。
+
 ## License / 许可证
 
 MIT © Hjay1101
